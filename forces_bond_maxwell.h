@@ -98,7 +98,7 @@ void forces_bond_maxwell(Bond *bond, Part parti, Part partj, double dt, double m
     }
 
     double mod_rf, mod_r0, mod_rold, mod_rold2, beta, beta_old;
-    double n[3], S[3], s[3], S_rot[3], s_rot[3];
+    double n[3], S[3], s[3], S_old[3], s_old[3];
 
     mod_rf = modulus(r_f);
     mod_r0 = modulus(r_0);
@@ -113,9 +113,7 @@ void forces_bond_maxwell(Bond *bond, Part parti, Part partj, double dt, double m
     S[1] = r_f[2]*(r_f[1]*r_0[2]-r_0[1]*r_f[2]) - r_f[0]*(r_0[1]*r_f[0]-r_f[1]*r_0[0]);
     S[2] = r_f[0]*(r_f[2]*r_0[0]-r_0[2]*r_f[0]) - r_f[1]*(r_0[2]*r_f[1]-r_f[2]*r_0[1]);
 
-//    S[0] = r_c[1]*(r_c[0]*r_0[1]-r_0[0]*r_c[1]) - r_c[2]*(r_0[0]*r_c[2]-r_c[0]*r_0[2]);
-//    S[1] = r_c[2]*(r_c[1]*r_0[2]-r_0[1]*r_c[2]) - r_c[0]*(r_0[1]*r_c[0]-r_c[1]*r_0[0]);
-//    S[2] = r_c[0]*(r_c[2]*r_0[0]-r_0[2]*r_c[0]) - r_c[1]*(r_0[2]*r_c[1]-r_c[2]*r_0[1]);
+    double vc_n[3], vc_s;
 
     double mod_S = modulus(S);
 
@@ -133,13 +131,18 @@ void forces_bond_maxwell(Bond *bond, Part parti, Part partj, double dt, double m
         s[2] = S[2]/mod_S;
     }
 
+    vc_s = v_c[0]*s[0] + v_c[1]*s[1] + v_c[2]*s[2];
+
+    beta = acos((r_f[0]*r_0[0] + r_f[1]*r_0[1] + r_f[2]*r_0[2])/(mod_rf*mod_r0));
+    beta_old = acos((r_old[0]*r_0[0] + r_old[1]*r_0[1] + r_old[2]*r_0[2])/(mod_rold*mod_r0));
+
     double delta_theta[3];
 
     delta_theta[0] = (omi[0] - omj[0])*dt;
     delta_theta[1] = (omi[1] - omj[1])*dt;
     delta_theta[2] = (omi[2] - omj[2])*dt;
 
-    double delta_theta_n, delta_theta_s, delta_theta_t, vc_n[3], vc_s[3];
+    double delta_theta_n, delta_theta_s, delta_theta_t;
 
     delta_theta_n = delta_theta[0]*n[0] + delta_theta[1]*n[1] + delta_theta[2]*n[2];
     delta_theta_s = delta_theta[0]*s[0] + delta_theta[1]*s[1] + delta_theta[2]*s[2];
@@ -147,85 +150,31 @@ void forces_bond_maxwell(Bond *bond, Part parti, Part partj, double dt, double m
 
     /*Computing forces and torques*/
 
-//    double fn_rot, fs_rot;
-//
-//    fn_rot = fn[0]*n[0] + fn[1]*n[1] + fn[2]*n[2];
-//    fs_rot = fs[0]*s[0] + fs[1]*s[1] + fs[2]*s[2];
-
     if (i==0)
     {
-//        fn[0] = 0.;
-//        fn[1] = 0.;
-//        fn[2] = 0.;
-//
-//        fs[0] = 0.;
-//        fs[1] = 0.;
-//        fs[2] = 0.;
+        fn[0] = 1./(1./(kn*area) + dt/mun)*(mod_rf - mod_r0)*n[0];
+        fn[1] = 1./(1./(kn*area) + dt/mun)*(mod_rf - mod_r0)*n[1];
+        fn[2] = 1./(1./(kn*area) + dt/mun)*(mod_rf - mod_r0)*n[2];
 
-//        fn[0] = kn*area*(mod_rf - mod_r0)*n[0];
-//        fn[1] = kn*area*(mod_rf - mod_r0)*n[1];
-//        fn[2] = kn*area*(mod_rf - mod_r0)*n[2];
-//
-//        fs[0] = ks*area*mod_r0*sin(beta)*s[0];
-//        fs[1] = ks*area*mod_r0*sin(beta)*s[1];
-//        fs[2] = ks*area*mod_r0*sin(beta)*s[2];
-
-        vc_n[0] = (v_c[0]*n[0] + v_c[1]*n[1] + v_c[2]*n[2])*n[0];
-        vc_n[1] = (v_c[0]*n[0] + v_c[1]*n[1] + v_c[2]*n[2])*n[1];
-        vc_n[2] = (v_c[0]*n[0] + v_c[1]*n[1] + v_c[2]*n[2])*n[2];
-
-        vc_s[0] = v_c[0] - vc_n[0];
-        vc_s[1] = v_c[1] - vc_n[1];
-        vc_s[2] = v_c[2] - vc_n[2];
-
-        fn[0] = fn[0]*(1. - dt/lambdan) + kn*area*vc_n[0]*dt;
-        fn[1] = fn[1]*(1. - dt/lambdan) + kn*area*vc_n[1]*dt;
-        fn[2] = fn[2]*(1. - dt/lambdan) + kn*area*vc_n[2]*dt;
-
-        fs[0] = fs[0]*(1. - dt/lambdas) + ks*area*vc_s[0]*dt;
-        fs[1] = fs[1]*(1. - dt/lambdas) + ks*area*vc_s[1]*dt;
-        fs[2] = fs[2]*(1. - dt/lambdas) + ks*area*vc_s[2]*dt;
-
-        std::cout << "vc_n: " << vc_n << "\n";
-        std::cout << "vc_s: " << vc_s << "\n";
-        std::cout << "fn: " << fn[0] << "," << fn[1] << "," << fn[2] << "\n";
-        std::cout << "fs: " << fs[0] << "," << fs[1] << "," << fs[2] << "\n";
-    }
-
-    else if (i==1)
-    {
-        beta = acos((r_f[0]*r_0[0] + r_f[1]*r_0[1] + r_f[2]*r_0[2])/(mod_rf*mod_r0));
-//        beta = acos((r_c[0]*r_0[0] + r_c[1]*r_0[1] + r_c[2]*r_0[2])/(mod_rc*mod_r0));
-
-        if (std::isnan(beta))
-            beta = 0.;
-
-        fn[0] = kn*area*(mod_rf - mod_r0)*(2. - dt/lambdan)*n[0];
-        fn[1] = kn*area*(mod_rf - mod_r0)*(2. - dt/lambdan)*n[1];
-        fn[2] = kn*area*(mod_rf - mod_r0)*(2. - dt/lambdan)*n[2];
-
-        fs[0] = ks*area*mod_r0*sin(beta)*(2. - dt/lambdas)*s[0];
-        fs[1] = ks*area*mod_r0*sin(beta)*(2. - dt/lambdas)*s[1];
-        fs[2] = ks*area*mod_r0*sin(beta)*(2. - dt/lambdas)*s[2];
+        fs[0] = 1./(1./(ks*area) + dt/mus)*mod_r0*sin(beta)*s[0];
+        fs[1] = 1./(1./(ks*area) + dt/mus)*mod_r0*sin(beta)*s[1];
+        fs[2] = 1./(1./(ks*area) + dt/mus)*mod_r0*sin(beta)*s[2];
     }
 
     else
     {
-        vc_n[0] = (vc_old[0]*n[0] + vc_old[1]*n[1] + vc_old[2]*n[2])*n[0];
-        vc_n[1] = (vc_old[0]*n[0] + vc_old[1]*n[1] + vc_old[2]*n[2])*n[1];
-        vc_n[2] = (vc_old[0]*n[0] + vc_old[1]*n[1] + vc_old[2]*n[2])*n[2];
+        double fn_old, fs_old;
 
-        vc_s[0] = vc_old[0] - vc_n[0];
-        vc_s[1] = vc_old[1] - vc_n[1];
-        vc_s[2] = vc_old[2] - vc_n[2];
+        fn_old = fn[0]*n[0] + fn[1]*n[1] + fn[2]*n[2];
+        fs_old = fs[0]*s[0] + fs[1]*s[1] + fs[2]*s[2];
 
-        fn[0] = fn[0]*(1. - dt/lambdan) + kn*area*vc_n[0]*dt;
-        fn[1] = fn[1]*(1. - dt/lambdan) + kn*area*vc_n[1]*dt;
-        fn[2] = fn[2]*(1. - dt/lambdan) + kn*area*vc_n[2]*dt;
+        fn[0] = (fn_old/(1. + dt/lambdan) + 1./(1./(kn*area) + dt/mun)*(mod_rf - mod_rold))*n[0];
+        fn[1] = (fn_old/(1. + dt/lambdan) + 1./(1./(kn*area) + dt/mun)*(mod_rf - mod_rold))*n[1];
+        fn[2] = (fn_old/(1. + dt/lambdan) + 1./(1./(kn*area) + dt/mun)*(mod_rf - mod_rold))*n[2];
 
-        fs[0] = fs[0]*(1. - dt/lambdas) + ks*area*vc_s[0]*dt;
-        fs[1] = fs[1]*(1. - dt/lambdas) + ks*area*vc_s[1]*dt;
-        fs[2] = fs[2]*(1. - dt/lambdas) + ks*area*vc_s[2]*dt;
+        fs[0] = (fs_old/(1. + dt/lambdas) + 1./(1./(ks*area) + dt/mus)*vc_s*dt)*s[0];
+        fs[1] = (fs_old/(1. + dt/lambdas) + 1./(1./(ks*area) + dt/mus)*vc_s*dt)*s[1];
+        fs[2] = (fs_old/(1. + dt/lambdas) + 1./(1./(ks*area) + dt/mus)*vc_s*dt)*s[2];
     }
 
     double mod_fs = modulus(fs), tts[3];
